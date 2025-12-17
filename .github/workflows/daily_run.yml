@@ -33,5 +33,7 @@ jobs:
         env: 
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
           EMAIL_SENDER: "work.halal.zobaer@gmail.com" # Or use a secret for this too
+          TELEGRAM_TOKEN : ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_ID }}
         run: |
           python epic_games.py
