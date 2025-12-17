@@ -7,7 +7,7 @@ Original file is located at
     https://colab.research.google.com/drive/1ElwJZThk3g6t5ZjWovWycRiGxgfzwcc6
 """
 
-pip install legendary-gl
+# pip install legendary-gl
 
 import subprocess
 import json
