@@ -17,8 +17,8 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 # --- USER CONFIGURATION (EDIT THIS) ---
-EMAIL_SENDER = "work.halal.zobaer@gmail.com"
-EMAIL_PASSWORD = "zzyy adpa koca wrog"  # Google App Password, not main password
+EMAIL_SENDER = os.environ.get("EMAIL_SENDER")
+EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD")  # Google App Password, not main password
 EMAIL_RECEIVER = "work.halal.zobaer@gmail.com"
 
 def get_free_games_from_store():
@@ -156,3 +156,94 @@ if __name__ == "__main__":
         send_email(claimable_games)
     else:
         print("✅ No new games to claim. You are up to date.")
+import subprocess
+import json
+import requests
+import os
+
+# --- CONFIGURATION ---
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
+
+def get_free_games():
+    """ Fetches currently free games from Epic."""
+    url = "https://store-site-backend-static.ak.epicgames.com/freeGamesPromotions"
+    try:
+        data = requests.get(url).json()
+        games = data['data']['Catalog']['searchStore']['elements']
+        free_games = []
+
+        for game in games:
+            promotions = game.get('promotions')
+            if not promotions: continue
+            active = promotions.get('promotionalOffers')
+            if not active or not active[0]['promotionalOffers']: continue
+            
+            for offer in active[0]['promotionalOffers']:
+                if offer['discountSetting']['discountPercentage'] == 0:
+                    slug = game.get('productSlug') or game.get('urlSlug')
+                    free_games.append({
+                        'title': game['title'],
+                        'url': f"https://store.epicgames.com/en-US/p/{slug}"
+                    })
+        return free_games
+    except:
+        return []
+
+def get_my_library():
+    """ Checks what you own using Legendary."""
+    try:
+        result = subprocess.run(['legendary', 'list-games', '--json'], capture_output=True, text=True)
+        if result.returncode != 0: return []
+        return {g['app_title'] for g in json.loads(result.stdout)}
+    except:
+        return set()
+
+def send_telegram_msg(message, buttons=None):
+    """Sends a message to your Telegram."""
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    payload = {
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": message,
+        "parse_mode": "Markdown"
+    }
+    if buttons:
+        payload["reply_markup"] = json.dumps({"inline_keyboard": buttons})
+        
+    requests.post(url, json=payload)
+
+# --- MAIN EXECUTION ---
+if __name__ == "__main__":
+    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
+        print("❌ Error: Missing Telegram secrets.")
+        exit(1)
+
+    print("--- 🎮 Epic Agent (Telegram) ---")
+    
+    free_games = get_free_games()
+    owned_games = get_my_library()
+    
+    # Check for new games
+    new_games = [g for g in free_games if g['title'] not in owned_games]
+
+    if new_games:
+        print(f"Found {len(new_games)} new games.")
+        
+        # Build the message
+        msg = f"🚀 *New Free Games Detected!*\n"
+        buttons = []
+        
+        for game in new_games:
+            msg += f"\n• {game['title']}"
+            # Add a button for each game
+            buttons.append([{"text": f"Get {game['title']}", "url": game['url']}])
+            
+        msg += "\n\nClick the buttons below to claim them!"
+        send_telegram_msg(msg, buttons)
+        
+    else:
+        # Simple status update
+        print("All clear.")
+        msg = f"✅ *Daily Check Complete*\nNo new games. You own all {len(owned_games)} games currently in your library."
+        send_telegram_msg(msg)
+
