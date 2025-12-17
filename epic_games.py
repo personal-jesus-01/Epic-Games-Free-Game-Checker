@@ -13,8 +13,10 @@ import subprocess
 import json
 import requests
 import smtplib
+import os
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+
 
 # --- USER CONFIGURATION (EDIT THIS) ---
 EMAIL_SENDER = os.environ.get("EMAIL_SENDER")
@@ -156,6 +158,8 @@ if __name__ == "__main__":
         send_email(claimable_games)
     else:
         print("✅ No new games to claim. You are up to date.")
+
+        
 import subprocess
 import json
 import requests
