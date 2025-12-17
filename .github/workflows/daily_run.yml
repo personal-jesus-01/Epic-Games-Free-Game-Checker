@@ -25,16 +25,13 @@ jobs:
       # --- NEW STEP: RESTORE THE SESSION FILE ---
       - name: Restore Login Session
         run: |
-          # 1. Create the folder where legendary expects the file
           mkdir -p ~/.config/legendary
-          
-          # 2. Write the secret into a real file
           echo '${{ secrets.LEGENDARY_JSON }}' > ~/.config/legendary/user.json
       # ------------------------------------------
 
       - name: Run my script
         env: 
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-          EMAIL_SENDER: "your_email@gmail.com" # Or use a secret for this too
+          EMAIL_SENDER: "work.halal.zobaer@gmail.com" # Or use a secret for this too
         run: |
           python epic_games.py
